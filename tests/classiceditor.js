@@ -8,15 +8,12 @@
 import ClassicEditorUI from '../src/classiceditorui';
 import ClassicEditorUIView from '../src/classiceditoruiview';
 
-import HtmlDataProcessor from '@ckeditor/ckeditor5-engine/src/dataprocessor/htmldataprocessor';
-
 import ClassicEditor from '../src/classiceditor';
 import Plugin from '@ckeditor/ckeditor5-core/src/plugin';
 import Paragraph from '@ckeditor/ckeditor5-paragraph/src/paragraph';
 import Bold from '@ckeditor/ckeditor5-basic-styles/src/bold';
 import DataApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/dataapimixin';
 import ElementApiMixin from '@ckeditor/ckeditor5-core/src/editor/utils/elementapimixin';
-import RootElement from '@ckeditor/ckeditor5-engine/src/model/rootelement';
 
 import testUtils from '@ckeditor/ckeditor5-core/tests/_utils/utils';
 
@@ -28,12 +25,17 @@ describe( 'ClassicEditor', () => {
 
 	testUtils.createSinonSandbox();
 
+	function createElement() {
+		const el = document.createElement( 'div' );
+		el.innerHTML = '<p><strong>foo</strong> bar</p>';
+
+		document.body.appendChild( el );
+
+		return el;
+	}
+
 	beforeEach( () => {
-		editorElement = document.createElement( 'div' );
-		editorElement.innerHTML = '<p><strong>foo</strong> bar</p>';
-
-		document.body.appendChild( editorElement );
-
+		editorElement = createElement();
 		testUtils.sinon.stub( console, 'warn' ).callsFake( () => {} );
 	} );
 
@@ -46,24 +48,12 @@ describe( 'ClassicEditor', () => {
 			editor = new ClassicEditor( editorElement );
 		} );
 
-		it( 'uses HTMLDataProcessor', () => {
-			expect( editor.data.processor ).to.be.instanceof( HtmlDataProcessor );
-		} );
-
 		it( 'has a Data Interface', () => {
 			expect( testUtils.isMixed( ClassicEditor, DataApiMixin ) ).to.true;
 		} );
 
 		it( 'has a Element Interface', () => {
 			expect( testUtils.isMixed( ClassicEditor, ElementApiMixin ) ).to.true;
-		} );
-
-		it( 'creates main root element', () => {
-			expect( editor.model.document.getRoot( 'main' ) ).to.instanceof( RootElement );
-		} );
-
-		it( 'contains the source element as #sourceElement property', () => {
-			expect( editor.sourceElement ).to.equal( editorElement );
 		} );
 
 		it( 'handles form element', () => {
@@ -157,7 +147,7 @@ describe( 'ClassicEditor', () => {
 			class CustomClassicEditor extends ClassicEditor {}
 
 			return CustomClassicEditor
-				.create( editorElement, {
+				.create( createElement(), {
 					plugins: [ Paragraph, Bold ]
 				} )
 				.then( newEditor => {
@@ -175,7 +165,7 @@ describe( 'ClassicEditor', () => {
 			class CustomClassicEditor extends ClassicEditor {}
 			CustomClassicEditor.builtinPlugins = [ Paragraph, Bold ];
 
-			return CustomClassicEditor.create( editorElement )
+			return CustomClassicEditor.create( createElement() )
 				.then( newEditor => {
 					expect( newEditor.getData() ).to.equal( '<p><strong>foo</strong> bar</p>' );
 
@@ -194,7 +184,7 @@ describe( 'ClassicEditor', () => {
 		} );
 
 		it( 'initializes with config.initialData', () => {
-			return ClassicEditor.create( editorElement, {
+			return ClassicEditor.create( createElement(), {
 				initialData: '<p>Hello world!</p>',
 				plugins: [ Paragraph ]
 			} ).then( editor => {
@@ -302,6 +292,8 @@ describe( 'ClassicEditor', () => {
 
 		it( 'sets the data back to the editor element', () => {
 			editor.setData( '<p>foo</p>' );
+
+			expect( editor.sourceElement ).to.equal( editorElement );
 
 			return editor.destroy()
 				.then( () => {
